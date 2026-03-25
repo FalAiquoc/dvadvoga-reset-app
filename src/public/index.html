@@ -23,128 +23,121 @@
             height: 100vh;
             margin: 0;
         }
-        .container {
-            background-color: var(--card-bg);
+        .card {
+            background: var(--card-bg);
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.5);
             width: 100%;
             max-width: 400px;
+            text-align: center;
             border-top: 4px solid var(--primary);
         }
-        h1 {
-            color: var(--primary);
-            font-size: 1.5rem;
-            text-align: center;
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-        }
+        h1 { color: var(--primary); font-size: 1.5rem; margin-bottom: 1.5rem; }
+        .input-group { margin-bottom: 1rem; text-align: left; }
+        label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; }
         input {
             width: 100%;
-            padding: 0.8rem;
-            border-radius: 4px;
-            border: 1px solid #333;
-            background-color: #252525;
+            padding: 12px;
+            background: #2c2c2c;
+            border: 1px solid #444;
             color: white;
+            border-radius: 4px;
             box-sizing: border-box;
-            outline: none;
-        }
-        input:focus {
-            border-color: var(--primary);
         }
         button {
             width: 100%;
-            padding: 1rem;
-            background-color: var(--primary);
-            color: #000;
+            padding: 12px;
+            background: var(--primary);
             border: none;
-            border-radius: 4px;
+            color: #000;
             font-weight: bold;
+            border-radius: 4px;
             cursor: pointer;
-            transition: opacity 0.2s;
             margin-top: 1rem;
         }
-        button:hover {
-            opacity: 0.9;
-        }
-        #message {
-            text-align: center;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-        }
-        .error { color: var(--error); }
-        .success { color: var(--success); }
+        #message { margin-top: 1rem; font-size: 0.9rem; }
+        .qr-section { margin-bottom: 1.5rem; padding: 1rem; background: white; border-radius: 4px; display: none; }
+        .qr-section img { max-width: 200px; }
+        .qr-text { font-size: 0.8rem; color: #333; margin-top: 0.5rem; }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="card">
         <h1>DV Advoga</h1>
-        <p style="text-align: center; font-size: 0.9rem; margin-bottom: 1.5rem;">Defina sua nova senha de e-mail</p>
-        <form id="reset-form">
-            <div class="form-group">
-                <label for="password">Nova Senha</label>
-                <input type="password" id="password" required placeholder="Digite a nova senha">
+        <p id="subtitle">Redefinição de Senha</p>
+
+        <div id="qrContainer" class="qr-section">
+            <p class="qr-text" style="color: black; margin-bottom: 10px;"><b>Configure o Google Authenticator:</b> Escaneie o código abaixo no app.</p>
+            <img id="qrImage" src="" alt="QR Code 2FA">
+            <p class="qr-text" style="color: black; margin-top: 10px;">Após escanear, use o código de 6 dígitos abaixo.</p>
+        </div>
+
+        <form id="resetForm">
+            <div class="input-group">
+                <label>Nova Senha</label>
+                <input type="password" id="password" required placeholder="Digite sua nova senha">
             </div>
-            <div class="form-group">
-                <label for="confirm">Confirmar Senha</label>
-                <input type="password" id="confirm" required placeholder="Confirme a nova senha">
+            <div class="input-group">
+                <label>Código de Segurança (App)</label>
+                <input type="text" id="totp_token" required placeholder="000 000" maxlength="6">
             </div>
-            <button type="submit" id="submit-btn">SALVAR SENHA</button>
+            <button type="submit" id="btnSubmit">Alterar Senha</button>
         </form>
         <div id="message"></div>
     </div>
 
     <script>
-        const form = document.getElementById('reset-form');
-        const msg = document.getElementById('message');
         const token = window.location.pathname.split('/').pop();
+        
+        async function check2fa() {
+            try {
+                const res = await fetch(`/api/check-2fa/${token}`);
+                const data = await res.json();
+                if (data.qrImage) {
+                    document.getElementById('qrContainer').style.display = 'block';
+                    document.getElementById('qrImage').src = data.qrImage;
+                    document.getElementById('subtitle').innerText = 'Configuração de Segurança';
+                }
+            } catch (e) {
+                console.error('Erro ao verificar 2FA');
+            }
+        }
 
-        form.onsubmit = async (e) => {
+        check2fa();
+
+        document.getElementById('resetForm').onsubmit = async (e) => {
             e.preventDefault();
             const password = document.getElementById('password').value;
-            const confirm = document.getElementById('confirm').value;
+            const totp_token = document.getElementById('totp_token').value;
+            const msgDiv = document.getElementById('message');
+            const btn = document.getElementById('btnSubmit');
 
-            if (password !== confirm) {
-                msg.className = 'error';
-                msg.innerText = 'As senhas não coincidem.';
-                return;
-            }
-
-            const btn = document.getElementById('submit-btn');
             btn.disabled = true;
-            btn.innerText = 'SALVANDO...';
+            btn.innerText = 'Processando...';
 
             try {
                 const res = await fetch('/api/reset', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token, password })
+                    body: JSON.stringify({ token, password, totp_token })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    msg.className = 'success';
-                    msg.innerHTML = 'Senha alterada com sucesso! <br><br> <a href="https://mail.google.com" style="color: #c9a55c; text-decoration: none; font-weight: bold;">IR PARA O GMAIL</a>';
-                    form.style.display = 'none';
+                    msgDiv.style.color = 'var(--success)';
+                    msgDiv.innerHTML = '✅ ' + data.message;
+                    document.getElementById('resetForm').style.display = 'none';
+                    document.getElementById('qrContainer').style.display = 'none';
                 } else {
-                    msg.className = 'error';
-                    msg.innerText = data.error || 'Erro ao redefinir senha.';
-                    btn.disabled = false;
-                    btn.innerText = 'SALVAR SENHA';
+                    msgDiv.style.color = 'var(--error)';
+                    msgDiv.innerHTML = '❌ ' + (data.error || 'Erro desconhecido.');
                 }
             } catch (err) {
-                msg.className = 'error';
-                msg.innerText = 'Erro de conexão.';
+                msgDiv.style.color = 'var(--error)';
+                msgDiv.innerHTML = '❌ Erro de conexão.';
+            } finally {
                 btn.disabled = false;
-                btn.innerText = 'SALVAR SENHA';
+                btn.innerText = 'Alterar Senha';
             }
         };
     </script>
