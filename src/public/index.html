@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Definir Nova Senha - DV Advoga</title>
+    <style>
+        :root {
+            --primary: #c9a55c; /* Gold/Lawyer theme */
+            --bg: #121212;
+            --card-bg: #1e1e1e;
+            --text: #e0e0e0;
+            --error: #ff5252;
+            --success: #4caf50;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+            border-top: 4px solid var(--primary);
+        }
+        h1 {
+            color: var(--primary);
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        input {
+            width: 100%;
+            padding: 0.8rem;
+            border-radius: 4px;
+            border: 1px solid #333;
+            background-color: #252525;
+            color: white;
+            box-sizing: border-box;
+            outline: none;
+        }
+        input:focus {
+            border-color: var(--primary);
+        }
+        button {
+            width: 100%;
+            padding: 1rem;
+            background-color: var(--primary);
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-top: 1rem;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        #message {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+        .error { color: var(--error); }
+        .success { color: var(--success); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DV Advoga</h1>
+        <p style="text-align: center; font-size: 0.9rem; margin-bottom: 1.5rem;">Defina sua nova senha de e-mail</p>
+        <form id="reset-form">
+            <div class="form-group">
+                <label for="password">Nova Senha</label>
+                <input type="password" id="password" required placeholder="Digite a nova senha">
+            </div>
+            <div class="form-group">
+                <label for="confirm">Confirmar Senha</label>
+                <input type="password" id="confirm" required placeholder="Confirme a nova senha">
+            </div>
+            <button type="submit" id="submit-btn">SALVAR SENHA</button>
+        </form>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('reset-form');
+        const msg = document.getElementById('message');
+        const token = window.location.pathname.split('/').pop();
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password').value;
+            const confirm = document.getElementById('confirm').value;
+
+            if (password !== confirm) {
+                msg.className = 'error';
+                msg.innerText = 'As senhas não coincidem.';
+                return;
+            }
+
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.innerText = 'SALVANDO...';
+
+            try {
+                const res = await fetch('/api/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    msg.className = 'success';
+                    msg.innerHTML = 'Senha alterada com sucesso! <br><br> <a href="https://mail.google.com" style="color: #c9a55c; text-decoration: none; font-weight: bold;">IR PARA O GMAIL</a>';
+                    form.style.display = 'none';
+                } else {
+                    msg.className = 'error';
+                    msg.innerText = data.error || 'Erro ao redefinir senha.';
+                    btn.disabled = false;
+                    btn.innerText = 'SALVAR SENHA';
+                }
+            } catch (err) {
+                msg.className = 'error';
+                msg.innerText = 'Erro de conexão.';
+                btn.disabled = false;
+                btn.innerText = 'SALVAR SENHA';
+            }
+        };
+    </script>
+</body>
+</html>
