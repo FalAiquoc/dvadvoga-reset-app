@@ -19,10 +19,15 @@ const db = new Database(DB_PATH);
 db.exec(`CREATE TABLE IF NOT EXISTS tokens (token TEXT PRIMARY KEY, email TEXT NOT NULL, expires_at INTEGER NOT NULL)`);
 db.exec(`CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, totp_secret TEXT)`);
 
-fastify.register(require('@fastify/static'), { root: path.join(__dirname, 'public'), prefix: '/resetarsenha/', });
+// Important: Prefix '/' to work with Dokploy reverse proxy path stripping
+fastify.register(require('@fastify/static'), { 
+  root: path.join(__dirname, 'public'), 
+  prefix: '/', 
+});
 fastify.register(require('@fastify/formbody'));
 
-fastify.get('/resetarsenha/:token', (request, reply) => { 
+// Route for the reset page
+fastify.get('/:token', (request, reply) => { 
   return reply.sendFile('index.html'); 
 });
 
