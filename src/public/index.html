@@ -1,7 +1,100 @@
 <!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Definir Nova Senha - DV Advoga</title>
+    <style>
+        :root {
+            --primary: #c9a55c; /* Gold/Lawyer theme */
+            --bg: #121212;
+            --card-bg: #1e1e1e;
+            --text: #e0e0e0;
+            --error: #ff5252;
+            --success: #4caf50;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border-top: 4px solid var(--primary);
+        }
+        h1 { color: var(--primary); font-size: 1.5rem; margin-bottom: 1.5rem; }
+        .input-group { margin-bottom: 1rem; text-align: left; }
+        label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; }
+        input {
+            width: 100%;
+            padding: 12px;
+            background: #2c2c2c;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            border: none;
+            color: #000;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+        #message { margin-top: 1rem; font-size: 0.9rem; }
+        .qr-section { margin-bottom: 1.5rem; padding: 1rem; background: white; border-radius: 4px; display: none; }
+        .qr-section img { max-width: 200px; }
+        .qr-text { font-size: 0.8rem; color: #333; margin-top: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>DV Advoga</h1>
+        <p id="subtitle">Redefinição de Senha</p>
+
+        <div id="qrContainer" class="qr-section">
+            <p class="qr-text" style="color: black; margin-bottom: 10px;"><b>Configure o Google Authenticator:</b> Escaneie o código abaixo no app.</p>
+            <img id="qrImage" src="" alt="QR Code 2FA">
+            <p class="qr-text" style="color: black; margin-top: 10px;">Após escanear, use o código de 6 dígitos abaixo.</p>
+            <p class="qr-text" style="color: black; margin-top: 10px; font-weight: bold;">Chave Manual: <span id="secretKey" style="color: #c9a55c; letter-spacing: 1px;"></span></p>
+        </div>
+
+        <form id="resetForm">
+            <div class="input-group">
+                <label>Nova Senha</label>
+                <input type="password" id="password" required placeholder="Digite sua nova senha">
+            </div>
+            <div class="input-group">
+                <label>Código de Segurança (App)</label>
+                <input type="text" id="totp_token" required placeholder="000 000" maxlength="6">
+            </div>
+            <button type="submit" id="btnSubmit">Alterar Senha</button>
+        </form>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const pathParts = window.location.pathname.split('/');
+        const token = pathParts.filter(p => p).pop();
+        
+        async function check2fa() {
             try {
-                // Use relative path: api/check-2fa/TOKEN
-                const res = await fetch(`api/check-2fa/${token}`);
+                const res = await fetch(`../api/check-2fa/${token}`);
                 const data = await res.json();
                 if (data.qrImage) {
                     document.getElementById('qrContainer').style.display = 'block';
@@ -16,9 +109,7 @@
             }
         }
 
-
         if (token) check2fa();
-
 
         document.getElementById('resetForm').onsubmit = async (e) => {
             e.preventDefault();
@@ -27,14 +118,11 @@
             const msgDiv = document.getElementById('message');
             const btn = document.getElementById('btnSubmit');
 
-
             btn.disabled = true;
             btn.innerText = 'Processando...';
 
-
             try {
-                // Use relative path: api/reset
-                const res = await fetch('api/reset', {
+                const res = await fetch('../api/reset', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token, password, totp_token })
@@ -60,4 +148,3 @@
     </script>
 </body>
 </html>
-
